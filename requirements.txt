@@ -1,3 +1,4 @@
 pandas
 python-binance
 PyYAML
+python-dotenv
