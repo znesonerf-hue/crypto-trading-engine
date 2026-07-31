@@ -42,12 +42,9 @@ class TradingEngine:
         # Initialize exchange connector (if live/paper)
         self.connector = None
         if mode in ["paper", "live"]:
-            if config.binance_api_key and config.binance_api_secret:
+            
                 self.connector = BitkubMarketData(
-                    config.binance_api_key,
-                    config.binance_api_secret,
-                    testnet=(mode == "paper")
-                )
+                    
         
         self.strategies: Dict[str, BaseStrategy] = {}
         self.is_running = False
