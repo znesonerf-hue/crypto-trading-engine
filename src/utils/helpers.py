@@ -22,4 +22,14 @@ def calculate_rsi(df: pd.DataFrame, window: int = 14) -> pd.DataFrame:
     rs = gain / loss
     df['RSI'] = 100 - (100 / (1 + rs))
     return df
+
+def calculate_bollinger_bands(df: pd.DataFrame, window: int = 20, num_std: float = 2.0) -> pd.DataFrame:
+    """
+    คำนวณค่า Bollinger Bands (Middle, Upper, Lower)
+    """
+    df['BB_Middle'] = df['close'].rolling(window=window).mean()
+    std = df['close'].rolling(window=window).std()
+    df['BB_Upper'] = df['BB_Middle'] + (std * num_std)
+    df['BB_Lower'] = df['BB_Middle'] - (std * num_std)
+    return df
     
