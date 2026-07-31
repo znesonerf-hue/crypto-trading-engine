@@ -1,0 +1,30 @@
+# Risk Management Configuration
+
+risk_management:
+  # Position sizing
+  max_position_size: 0.1  # 10% of portfolio per position
+  
+  # Stop loss and take profit
+  default_stop_loss_percent: 2.0
+  default_take_profit_percent: 5.0
+  
+  # Portfolio limits
+  max_open_positions: 5
+  max_drawdown_percent: 10.0  # Stop trading if 10% down from peak
+  daily_loss_limit: 1000.0  # Stop if daily loss exceeds this
+  
+  # Leverage
+  max_leverage: 1.0  # 1.0 = no leverage, 2.0 = 2x leverage
+  
+  # Order settings
+  max_slippage_percent: 0.5  # Maximum acceptable slippage
+  
+  # Risk per trade
+  risk_per_trade_percent: 1.0  # Risk 1% of portfolio per trade
+
+# Paper Trading Settings
+paper_trading:
+  enabled: true
+  initial_balance: 10000  # Starting balance in USDT
+  slippage_percent: 0.1   # Simulated slippage
+  commission_percent: 0.1  # Maker/taker commission

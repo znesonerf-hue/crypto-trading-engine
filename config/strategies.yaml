@@ -1,0 +1,52 @@
+# Strategy Configuration
+
+strategies:
+  momentum:
+    enabled: true
+    symbol: BTCUSDT
+    timeframe: 1h
+    parameters:
+      fast_ma: 20
+      slow_ma: 50
+      rsi_period: 14
+      rsi_overbought: 70
+      rsi_oversold: 30
+      min_volume_ratio: 1.2
+      stop_loss_percent: 2.0
+      take_profit_percent: 5.0
+
+  mean_reversion:
+    enabled: false
+    symbol: ETHUSDT
+    timeframe: 4h
+    parameters:
+      bb_period: 20
+      bb_std_dev: 2.0
+      stop_loss_percent: 2.5
+      take_profit_percent: 4.0
+
+  grid_trading:
+    enabled: false
+    symbol: BNBUSDT
+    timeframe: 1h
+    parameters:
+      grid_levels: 5
+      grid_range_percent: 5.0
+      entry_side: both
+
+  dca:
+    enabled: true
+    symbol: BTCUSDT
+    timeframe: 1d
+    parameters:
+      dca_amount: 100
+      dca_interval_hours: 24
+      max_position_value: 10000
+
+  arbitrage:
+    enabled: false
+    symbol: BTCUSDT
+    timeframe: 15m
+    parameters:
+      min_spread_percent: 0.5
+      correlation_threshold: 0.8
