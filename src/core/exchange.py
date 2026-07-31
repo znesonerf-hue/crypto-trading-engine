@@ -5,7 +5,9 @@ class BitkubMarketData:
         self.url = "https://api.bitkub.com/api/v3/market/ticker"
 
     def get_ticker(self, symbol: str = "BTC_USDT"):
-        if "USDT" in symbol and "_" not in symbol:
+        if symbol == "BTCUSDT":
+            symbol = "BTC_USDT"
+        elif "USDT" in symbol and "_" not in symbol:
             symbol = symbol.replace("USDT", "_USDT")
         """
         ดึงข้อมูลราคาตลาดล่าสุดจาก Bitkub v3 API
