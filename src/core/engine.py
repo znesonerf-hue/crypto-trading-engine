@@ -7,7 +7,7 @@ import pandas as pd
 from src.core.portfolio import Portfolio
 from src.core.risk_manager import RiskManager, RiskLimits
 from src.strategies.base import BaseStrategy, Signal
-from src.connectors.binance import BinanceConnector
+from src.core.exchange import BitkubMarketData
 from src.utils.logger import setup_logger
 from src.utils.config import config
 
@@ -43,7 +43,7 @@ class TradingEngine:
         self.connector = None
         if mode in ["paper", "live"]:
             if config.binance_api_key and config.binance_api_secret:
-                self.connector = BinanceConnector(
+                self.connector = BitkubMarketData(
                     config.binance_api_key,
                     config.binance_api_secret,
                     testnet=(mode == "paper")
