@@ -4,23 +4,23 @@ class BitkubMarketData:
     def __init__(self):
         self.url = "https://api.bitkub.com/api/v3/market/ticker"
 
-    def get_ticker(self, symbol: str = "BTC_USDT"):
+        def get_ticker(self, symbol: str = "BTC_THB"):
         try:
             response = requests.get(self.url, timeout=10)
             data = response.json()
             
-            # พิมพ์ข้อมูลทั้งหมดดูบน Log ของ Railway สักรอบ
-            print("Bitkub API Raw Response:", data)
-            
-            target_key = "BTC_USDT"
-            if isinstance(data, dict) and target_key in data:
-                return {
-                    "symbol": "BTCUSDT",
-                    "close": float(data[target_key]["last"]),
-                    "high": float(data[target_key]["high"]),
-                    "low": float(data[target_key]["low"]),
-                    "volume": float(data[target_key]["quoteVolume"])
-                }
+            # ตรวจสอบว่าข้อมูลเป็น List หรือไม่ แล้ววนหาคู่เหรียญที่ต้องการ
+            target_symbol = "BTC_THB" # เปลี่ยนเป็นคู่เหรียญที่ต้องการดึง เช่น BTC_THB
+            if isinstance(data, list):
+                for item in data:
+                    if item.get("symbol") == target_symbol:
+                        return {
+                            "symbol": "BTCUSDT", # ส่งชื่อนี้กลับให้ Engine เพื่อความเข้ากันได้
+                            "close": float(item["last"]),
+                            "high": float(item.get("high_24hr", item["last"])),
+                            "low": float(item.get("low_24hr", item["last"])),
+                            "volume": float(item.get("quote_volume", 0.0))
+                        }
         except Exception as e:
             print(f"Error fetching Bitkub market data: {e}")
         return None
