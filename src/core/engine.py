@@ -19,6 +19,21 @@ logger = setup_logger(__name__)
 class TradingEngine:
     """Main trading engine orchestrating all components"""
     
+    def notify_telegram(step_name, details):
+        token = os.getenv("TELEGRAM_BOT_TOKEN")
+        chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        if token and chat_id:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            message = (
+                f"🔄 *Bot Status: {step_name}*\n\n"
+                f"📋 *Details:*\n{details}"
+            )
+            payload = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
+            try:
+                requests.post(url, json=payload, timeout=5)
+            except Exception as e:
+                print(f"Telegram notification error: {e}") 
+                
     def __init__(self, mode: str = "paper", initial_capital: float = 10000):
         """
         Initialize trading engine.
@@ -114,21 +129,6 @@ class TradingEngine:
         if data.empty:
             logger.warning(f"No market data for {strategy.symbol}")
             return None
-
-    def notify_telegram(step_name, details):
-        token = os.getenv("TELEGRAM_BOT_TOKEN")
-        chat_id = os.getenv("TELEGRAM_CHAT_ID")
-        if token and chat_id:
-            url = f"https://api.telegram.org/bot{token}/sendMessage"
-            message = (
-                f"🔄 *Bot Status: {step_name}*\n\n"
-                f"📋 *Details:*\n{details}"
-            )
-            payload = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
-            try:
-                requests.post(url, json=payload, timeout=5)
-            except Exception as e:
-                print(f"Telegram notification error: {e}") 
             
         # Calculate signal
         signal = strategy.calculate_signal(data)
