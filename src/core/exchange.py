@@ -26,7 +26,7 @@ class BitkubMarketData:
             
         return None 
         
-        def get_klines(self, symbol: str, timeframe: str = "1h", limit: int = 100):
+    def get_klines(self, symbol: str, timeframe: str = "1h", limit: int = 100):
         """
         จำลองฟังก์ชัน get_klines ให้คืนค่า DataFrame ที่มีข้อมูลราคาปิด (close)
         เพื่อให้กลยุทธ์นำไปใช้งานต่อได้ทันที
@@ -44,5 +44,5 @@ class BitkubMarketData:
             }])
             return df
         return pd.DataFrame()
-    None
+        
     
