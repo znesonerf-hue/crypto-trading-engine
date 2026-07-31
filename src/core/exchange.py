@@ -4,7 +4,7 @@ class BitkubMarketData:
     def __init__(self):
         self.url = "https://api.bitkub.com/api/v3/market/ticker"
 
-    def get_ticker(self, symbol: str = "THB_BTC"):
+    def get_ticker(self, symbol: str = "BTC_USDT"):
         """
         ดึงข้อมูลราคาตลาดล่าสุดจาก Bitkub v3 API
         """
