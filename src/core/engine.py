@@ -43,7 +43,7 @@ class TradingEngine:
         self.connector = None
         if mode in ["paper", "live"]:
             
-                self.connector = BitkubMarketData(
+                self.connector = BitkubMarketData()
                     
         
         self.strategies: Dict[str, BaseStrategy] = {}
