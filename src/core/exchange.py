@@ -6,13 +6,14 @@ class BitkubMarketData:
 
     def get_ticker(self, symbol: str = "BTC_USDT"):
         try:
-            # ดึงข้อมูล ticker ทั้งหมดจาก Bitkub v3 API
             response = requests.get(self.url, timeout=10)
             data = response.json()
             
-            # ดึงคู่เหรียญ BTC_USDT ตรงๆ จากผลลัพธ์ของ Bitkub โดยไม่ต้องเทียบชื่อตัวแปรขาเข้า
+            # พิมพ์ข้อมูลทั้งหมดดูบน Log ของ Railway สักรอบ
+            print("Bitkub API Raw Response:", data)
+            
             target_key = "BTC_USDT"
-            if isinstance(data, dict) and target_Key in data:
+            if isinstance(data, dict) and target_key in data:
                 return {
                     "symbol": "BTCUSDT",
                     "close": float(data[target_key]["last"]),
