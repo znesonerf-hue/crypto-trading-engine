@@ -4,31 +4,26 @@ class BitkubMarketData:
     def __init__(self):
         self.url = "https://api.bitkub.com/api/v3/market/ticker"
 
-    def get_ticker(self, symbol: str = "BTC_USDT"):
-        if symbol == "BTCUSDT":
-            symbol = "BTC_USDT"
-        elif "USDT" in symbol and "_" not in symbol:
-            symbol = symbol.replace("USDT", "_USDT")
-        """
-        ดึงข้อมูลราคาตลาดล่าสุดจาก Bitkub v3 API
-        """
+        def get_ticker(self, symbol: str = "BTC_USDT"):
         try:
+            # ดึงข้อมูล ticker ทั้งหมดจาก Bitkub v3 API
             response = requests.get(self.url, timeout=10)
             data = response.json()
             
-            # ตรวจสอบรูปแบบข้อมูลที่ได้จาก Bitkub
-            if isinstance(data, dict) and symbol in data:
+            # ดึงคู่เหรียญ BTC_USDT ตรงๆ จากผลลัพธ์ของ Bitkub โดยไม่ต้องเทียบชื่อตัวแปรขาเข้า
+            target_key = "BTC_USDT"
+            if isinstance(data, dict) and target_Key in data:
                 return {
-                    "symbol": symbol,
-                    "close": float(data[symbol]["last"]),
-                    "high": float(data[symbol]["high"]),
-                    "low": float(data[symbol]["low"]),
-                    "volume": float(data[symbol]["quoteVolume"])
+                    "symbol": "BTCUSDT",
+                    "close": float(data[target_key]["last"]),
+                    "high": float(data[target_key]["high"]),
+                    "low": float(data[target_key]["low"]),
+                    "volume": float(data[target_key]["quoteVolume"])
                 }
         except Exception as e:
             print(f"Error fetching Bitkub market data: {e}")
-            
-        return None 
+        return None
+        
         
     def get_klines(self, symbol: str, timeframe: str = "1h", limit: int = 100):
         """
