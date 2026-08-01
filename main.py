@@ -49,6 +49,27 @@ def main():
     
     engine.add_strategy(strategy)
     
+    # ตั้งค่าให้ logging แสดงเวลาและระดับความสำคัญ
+    logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+
+def run_bot_loop():
+  while True:
+    logging.info("Bot กำลังทำงานรอบปัจจุบัน... สถานะปกติสุขดี")
+
+    # โค้ดงานของคุณตรงนี้ (เช่น ดึงข้อมูล หรือเทรด)
+    # ...
+
+    logging.info("พักการทำงาน 60 วินาทีก่อนเริ่มรอบถัดไป...")
+    time.sleep(60)  # พัก 1 นาทีแล้ววนลูปใหม่ (ปรับเวลาตามต้องการ)
+
+
+if __name__ == "__main__":
+  logging.info("เริ่มต้นเปิดระบบ Bot...")
+  run_bot_loop()
+    
     # Run engine
     try:
         logger.info(f"Starting trading engine: {args.strategy} on {args.symbol}")
