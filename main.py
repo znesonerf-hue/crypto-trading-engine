@@ -53,34 +53,15 @@ def main():
     
     engine.add_strategy(strategy)
     
-        # # Run engine (แทนที่ส่วนรันเดิมด้วยลูปนี้)
-    try:
-      logger.info(f"Starting trading engine: {args.strategy} on {args.symbol}")
-
-      # ใช้ while True เพื่อให้บอททำงานวนซ้ำและพ่น Log รายงานสถานะตลอดเวลา
-      while True:
-        logger.info(
-            f"Bot กำลังรันรอบปัจจุบัน... เช็คสถานะ {args.symbol} ({args.strategy})"
-        )
-
-        # สั่งรัน engine ตามรอบเวลาเดิมของคุณ
-        engine.run(interval_seconds=args.interval)
-
-        logger.info(
-            "ทำงานรอบนี้เสร็จสิ้น พักการทำงานตาม interval แล้วเริ่มรอบถัดไป..."
-        )
-
-    except KeyboardInterrupt:
-      logger.info("Shutting down...")
-      engine.stop()
-    except Exception as e:
-      logger.error(f"Error: {e}", exc_info=True)
-        
-    
     # Run engine
     try:
         logger.info(f"Starting trading engine: {args.strategy} on {args.symbol}")
+        # ใช้ while True เพื่อให้บอทวนลูปทำงานและรายงานสถานะตลอดเวลา
+      while True:
+        logger.info(
+            f"Bot กำลังรันรอบปัจจุบัน... เช็คสถานะ {args.symbol} ({args.strategy})"
         engine.run(interval_seconds=args.interval)
+            
     except KeyboardInterrupt:
         logger.info("Shutting down...")
         engine.stop()
