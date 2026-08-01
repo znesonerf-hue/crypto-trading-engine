@@ -53,25 +53,33 @@ def main():
     
     engine.add_strategy(strategy)
     
-    # Run engine
+        # Run engine
     try:
-        logger.info(f"Starting trading engine: {args.strategy} on {args.symbol}")
-        # ใช้ while True เพื่อให้บอทวนลูปทำงานและรายงานสถานะตลอดเวลา
+      logger.info(f"Starting trading engine: {args.strategy} on {args.symbol}")
+
+      # ใช้ while True เพื่อให้บอทวนลูปทำงานและรายงานสถานะตลอดเวลา
       while True:
         logger.info(
             f"Bot กำลังรันรอบปัจจุบัน... เช็คสถานะ {args.symbol} ({args.strategy})"
+        )
+
         engine.run(interval_seconds=args.interval)
-            
+
+        logger.info(
+            "ทำงานรอบนี้เสร็จสิ้น พักการทำงานตาม interval แล้วเริ่มรอบถัดไป..."
+        )
+
     except KeyboardInterrupt:
-        logger.info("Shutting down...")
-        engine.stop()
+      logger.info("Shutting down...")
+      engine.stop()
     except Exception as e:
-        logger.error(f"Error: {e}", exc_info=True)
-    
+      logger.error(f"Error: {e}", exc_info=True)
+
     # Print summary
     summary = engine.get_summary()
     logger.info(f"Summary: {summary}")
 
 
 if __name__ == "__main__":
-    main()
+  main()
+    
