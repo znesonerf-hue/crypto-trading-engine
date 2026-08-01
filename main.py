@@ -1,6 +1,8 @@
 """Main entry point for paper trading"""
 
-import argparse
+import argparse 
+import logging
+import time
 from src.core.engine import TradingEngine
 from src.strategies.momentum import MomentumStrategy
 from src.strategies.mean_reversion import MeanReversionStrategy
@@ -9,6 +11,8 @@ from src.strategies.arbitrage import ArbitrageStrategy
 from src.strategies.dca import DCAStrategy
 from src.utils.config import config
 from src.utils.logger import setup_logger
+from src import
+
 
 logger = setup_logger(__name__)
 
@@ -49,26 +53,29 @@ def main():
     
     engine.add_strategy(strategy)
     
-    # ตั้งค่าให้ logging แสดงเวลาและระดับความสำคัญ
-    logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+        # # Run engine (แทนที่ส่วนรันเดิมด้วยลูปนี้)
+    try:
+      logger.info(f"Starting trading engine: {args.strategy} on {args.symbol}")
 
+      # ใช้ while True เพื่อให้บอททำงานวนซ้ำและพ่น Log รายงานสถานะตลอดเวลา
+      while True:
+        logger.info(
+            f"Bot กำลังรันรอบปัจจุบัน... เช็คสถานะ {args.symbol} ({args.strategy})"
+        )
 
-def run_bot_loop():
-  while True:
-    logging.info("Bot กำลังทำงานรอบปัจจุบัน... สถานะปกติสุขดี")
+        # สั่งรัน engine ตามรอบเวลาเดิมของคุณ
+        engine.run(interval_seconds=args.interval)
 
-    # โค้ดงานของคุณตรงนี้ (เช่น ดึงข้อมูล หรือเทรด)
-    # ...
+        logger.info(
+            "ทำงานรอบนี้เสร็จสิ้น พักการทำงานตาม interval แล้วเริ่มรอบถัดไป..."
+        )
 
-    logging.info("พักการทำงาน 60 วินาทีก่อนเริ่มรอบถัดไป...")
-    time.sleep(60)  # พัก 1 นาทีแล้ววนลูปใหม่ (ปรับเวลาตามต้องการ)
-
-
-if __name__ == "__main__":
-  logging.info("เริ่มต้นเปิดระบบ Bot...")
-  run_bot_loop()
+    except KeyboardInterrupt:
+      logger.info("Shutting down...")
+      engine.stop()
+    except Exception as e:
+      logger.error(f"Error: {e}", exc_info=True)
+        
     
     # Run engine
     try:
