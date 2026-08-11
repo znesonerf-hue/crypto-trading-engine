@@ -1,0 +1,69 @@
+"""Hyperparameter Configuration"""
+
+# Neural Network Hyperparameters
+neural_network:
+  input_size: 8
+  hidden_layers: [16, 8]
+  output_size: 3
+  learning_rate: 0.001
+  batch_size: 32
+  epochs: 100
+  activation_functions:
+    - relu
+    - softmax
+  dropout_rate: 0.2
+
+# Evolutionary Algorithm Hyperparameters
+evolutionary:
+  population_size: 50
+  generations: 100
+  mutation_rate: 0.1
+  crossover_rate: 0.8
+  elite_size: 5
+  gene_ranges:
+    rsi_threshold: [20, 80]
+    macd_factor: [0.5, 2.0]
+    bb_multiplier: [1.0, 3.0]
+
+# Trading Strategy Hyperparameters
+trading:
+  max_position_size: 0.1
+  stop_loss_percent: 2.0
+  take_profit_percent: 5.0
+  max_open_positions: 5
+  position_sizing: "kelly"
+  risk_per_trade: 1.0
+
+# Data Preprocessing
+preprocessing:
+  normalization: "standard"
+  outlier_removal: true
+  outlier_std_threshold: 3
+  missing_value_method: "forward_fill"
+  test_split: 0.2
+  validation_split: 0.1
+
+# Backtesting
+backtesting:
+  start_date: "2023-01-01"
+  end_date: "2024-01-01"
+  initial_capital: 10000
+  slippage: 0.001
+  commission: 0.001
+  timeframe: "1h"
+  warmup_periods: 100
+
+# Risk Management
+risk_management:
+  max_drawdown: 10.0
+  daily_loss_limit: 1000
+  correlation_threshold: 0.8
+  var_confidence: 0.95
+  cvar_confidence: 0.95
+
+# Performance Metrics
+performance:
+  sharpe_ratio_target: 1.5
+  sortino_ratio_target: 2.0
+  win_rate_target: 0.55
+  profit_factor_target: 1.5
