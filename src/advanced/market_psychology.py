@@ -5,7 +5,13 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from src.utils.logger import setup_logger
+
+try:
+    from src.utils.logger import setup_logger
+except ImportError:
+    import logging
+    def setup_logger(name):
+        return logging.getLogger(name)
 
 logger = setup_logger(__name__)
 
@@ -116,7 +122,8 @@ class MarketPsychologySimulator:
         # Update trader emotions
         for trader in self.traders:
             for emotion, shift in emotion_shift.items():
-                trader.emotions[emotion] = max(0, min(1, trader.emotions[emotion] + shift))
+                current = trader.emotions.get(emotion, 0.0)
+                trader.emotions[emotion] = max(0.0, min(1.0, current + shift))
         
         # Calculate collective sentiment
         self._update_collective_sentiment()
@@ -136,16 +143,20 @@ class MarketPsychologySimulator:
         """
         Update collective market sentiment.
         """
+        if not self.traders:
+            return
+        
         avg_emotions = {}
         
         for emotion in self.collective_emotions:
-            avg_emotions[emotion] = sum(t.emotions[emotion] for t in self.traders) / len(self.traders)
+            total = sum(t.emotions.get(emotion, 0.0) for t in self.traders)
+            avg_emotions[emotion] = total / len(self.traders)
         
         self.collective_emotions = avg_emotions
         
         # Sentiment = (greed - fear) / 2 + confidence / 2
         sentiment = (avg_emotions['greed'] - avg_emotions['fear']) / 2 + avg_emotions['confidence'] / 2
-        sentiment = max(-1, min(1, sentiment))
+        sentiment = max(-1.0, min(1.0, sentiment))
         
         self.market_sentiment_history.append(sentiment)
     
@@ -161,28 +172,28 @@ class MarketPsychologySimulator:
         Returns:
             Action probabilities
         """
-        buy_pressure = 0
-        sell_pressure = 0
+        buy_pressure = 0.0
+        sell_pressure = 0.0
         
         for trader in self.traders:
             # Base decision on emotions and persona
             if trader.persona == TraderPersona.BULL:
-                buy_pressure += trader.emotions['greed'] * 0.8 + trader.emotions['confidence'] * 0.5
+                buy_pressure += trader.emotions.get('greed', 0) * 0.8 + trader.emotions.get('confidence', 0) * 0.5
             elif trader.persona == TraderPersona.BEAR:
-                sell_pressure += trader.emotions['fear'] * 0.8 + trader.emotions['doubt'] * 0.5
+                sell_pressure += trader.emotions.get('fear', 0) * 0.8 + trader.emotions.get('doubt', 0) * 0.5
             
             # Fear and greed affect all traders
-            buy_pressure += trader.emotions['greed'] * 0.3
-            sell_pressure += trader.emotions['fear'] * 0.3
+            buy_pressure += trader.emotions.get('greed', 0) * 0.3
+            sell_pressure += trader.emotions.get('fear', 0) * 0.3
         
         total_pressure = buy_pressure + sell_pressure
         if total_pressure == 0:
-            total_pressure = 1
+            total_pressure = 1.0
         
         return {
             'buy_probability': buy_pressure / total_pressure,
             'sell_probability': sell_pressure / total_pressure,
-            'hold_probability': 1 - (buy_pressure + sell_pressure) / (2 * total_pressure),
+            'hold_probability': 1.0 - (buy_pressure + sell_pressure) / (2 * total_pressure),
             'total_buy_volume': buy_pressure,
             'total_sell_volume': sell_pressure
         }
@@ -194,17 +205,34 @@ class MarketPsychologySimulator:
         Returns:
             Psychology report
         """
+        if not self.traders:
+            return {'error': 'No traders initialized'}
+        
         return {
             'timestamp': datetime.now().isoformat(),
             'num_traders': len(self.traders),
             'collective_emotions': self.collective_emotions,
             'sentiment_trend': self._calculate_sentiment_trend(),
             'persona_breakdown': self._get_persona_breakdown(),
-            'dominant_persona': max(
-                set(t.persona for t in self.traders),
-                key=lambda p: sum(1 for t in self.traders if t.persona == p)
-            ).value
+            'dominant_persona': self._get_dominant_persona()
         }
+    
+    def _get_dominant_persona(self) -> str:
+        """
+        Get dominant trader persona.
+        
+        Returns:
+            Dominant persona name
+        """
+        if not self.traders:
+            return 'unknown'
+        
+        persona_counts = {}
+        for trader in self.traders:
+            p_name = trader.persona.value
+            persona_counts[p_name] = persona_counts.get(p_name, 0) + 1
+        
+        return max(persona_counts, key=persona_counts.get)
     
     def _calculate_sentiment_trend(self) -> str:
         """

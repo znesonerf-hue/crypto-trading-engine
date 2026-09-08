@@ -1,12 +1,20 @@
 """High-Density Mempool Flow & Pending Transaction Sniffer"""
 
 import asyncio
+import statistics
 from typing import Dict, List, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime
 from collections import deque
 import hashlib
-from src.utils.logger import setup_logger
+
+try:
+    from src.utils.logger import setup_logger
+except ImportError:
+    # Fallback logging if module not available
+    import logging
+    def setup_logger(name):
+        return logging.getLogger(name)
 
 logger = setup_logger(__name__)
 
@@ -54,17 +62,20 @@ class MempoolSniffer:
             try:
                 pending_txs = await get_pending_txs()
                 
+                if not isinstance(pending_txs, dict):
+                    pending_txs = {}
+                
                 for tx_hash, tx_data in pending_txs.items():
                     if tx_hash not in self.mempool:
                         tx = PendingTransaction(
                             tx_hash=tx_hash,
                             from_address=tx_data.get('from', ''),
                             to_address=tx_data.get('to', ''),
-                            value=tx_data.get('value', 0),
-                            gas_price=tx_data.get('gasPrice', 0),
-                            gas_limit=tx_data.get('gas', 0),
+                            value=float(tx_data.get('value', 0)),
+                            gas_price=float(tx_data.get('gasPrice', 0)),
+                            gas_limit=int(tx_data.get('gas', 0)),
                             timestamp=datetime.now(),
-                            nonce=tx_data.get('nonce', 0),
+                            nonce=int(tx_data.get('nonce', 0)),
                             data=tx_data.get('input', '')
                         )
                         
@@ -143,7 +154,11 @@ class MempoolSniffer:
             True if opportunity detected
         """
         # Check for DEX interactions with high gas price
-        return tx.gas_price > sum(self.gas_price_history) / len(self.gas_price_history) * 1.5 if self.gas_price_history else False
+        if not self.gas_price_history:
+            return False
+        
+        avg_gas = statistics.mean(self.gas_price_history)
+        return tx.gas_price > avg_gas * 1.5
     
     def _is_mev_opportunity(self, tx: PendingTransaction) -> bool:
         """
@@ -198,7 +213,6 @@ class MempoolSniffer:
         if not self.gas_price_history:
             return {}
         
-        import statistics
         return {
             'current': self.gas_price_history[-1],
             'average': statistics.mean(self.gas_price_history),

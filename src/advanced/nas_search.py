@@ -1,11 +1,18 @@
 """Evolutionary Neural Architecture Search (NAS) for Trading"""
 
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+import copy
+import random
+from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime
-import random
-from src.utils.logger import setup_logger
+
+try:
+    from src.utils.logger import setup_logger
+except ImportError:
+    import logging
+    def setup_logger(name):
+        return logging.getLogger(name)
 
 logger = setup_logger(__name__)
 
@@ -77,7 +84,7 @@ class EvolutionaryNAS:
         return arch
     
     def evaluate_architecture(self, arch: NASArchitecture, 
-                            evaluate_func: callable) -> float:
+                            evaluate_func: Callable) -> float:
         """
         Evaluate architecture fitness.
         
@@ -102,7 +109,6 @@ class EvolutionaryNAS:
         Returns:
             Mutated architecture
         """
-        import copy
         mutated = copy.deepcopy(arch)
         
         mutation_type = random.choice(['add_layer', 'remove_layer', 'change_params'])
@@ -136,19 +142,22 @@ class EvolutionaryNAS:
         Returns:
             Tuple of offspring architectures
         """
-        import copy
         offspring1 = copy.deepcopy(arch1)
         offspring2 = copy.deepcopy(arch2)
         
         # Swap layer configurations
-        crossover_point = random.randint(1, min(len(arch1.layers), len(arch2.layers)) - 1)
+        min_len = min(len(arch1.layers), len(arch2.layers))
+        if min_len < 2:
+            return offspring1, offspring2
+        
+        crossover_point = random.randint(1, min_len - 1)
         
         offspring1.layers = arch1.layers[:crossover_point] + arch2.layers[crossover_point:]
         offspring2.layers = arch2.layers[:crossover_point] + arch1.layers[crossover_point:]
         
         return offspring1, offspring2
     
-    def search(self, evaluate_func: callable) -> NASArchitecture:
+    def search(self, evaluate_func: Callable) -> NASArchitecture:
         """
         Run evolutionary NAS search.
         
@@ -176,7 +185,7 @@ class EvolutionaryNAS:
             gen_info = {
                 'generation': generation,
                 'best_fitness': self.population[0].fitness,
-                'avg_fitness': np.mean([a.fitness for a in self.population])
+                'avg_fitness': float(np.mean([a.fitness for a in self.population]))
             }
             self.generation_history.append(gen_info)
             
@@ -188,8 +197,9 @@ class EvolutionaryNAS:
             
             while len(new_population) < self.population_size:
                 # Tournament selection
-                parent1 = random.choice(self.population[:elite_size * 2])
-                parent2 = random.choice(self.population[:elite_size * 2])
+                elite_pool = self.population[:max(2, elite_size * 2)]
+                parent1 = random.choice(elite_pool)
+                parent2 = random.choice(elite_pool)
                 
                 # Crossover and mutation
                 child1, child2 = self.crossover_architectures(parent1, parent2)

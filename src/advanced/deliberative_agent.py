@@ -4,7 +4,13 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from src.utils.logger import setup_logger
+
+try:
+    from src.utils.logger import setup_logger
+except ImportError:
+    import logging
+    def setup_logger(name):
+        return logging.getLogger(name)
 
 logger = setup_logger(__name__)
 
@@ -245,9 +251,13 @@ class DeliberativeAgent:
         Returns:
             Summary string
         """
+        if not self.reasoning_traces:
+            return "No reasoning traces available"
+        
         summary_parts = []
         for trace in self.reasoning_traces[-5:]:
-            summary_parts.append(f"[{trace.step_type.value.upper()}] {trace.content[:50]}...")
+            content_preview = trace.content.strip()[:50].replace('\n', ' ')
+            summary_parts.append(f"[{trace.step_type.value.upper()}] {content_preview}...")
         
         return " -> ".join(summary_parts)
     
