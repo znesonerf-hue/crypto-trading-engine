@@ -1,12 +1,11 @@
 ---
 title: Crypto Trading Bot
-emoji: 🤖
+emoji: 📈
 colorFrom: blue
-colorTo: indigo
+colorTo: green
 sdk: streamlit
-sdk_version: "4.0.0"
 app_file: app.py
 pinned: false
 ---
 
-# Crypto Trading Bot running 24/7
+# My Crypto Trading Bot
