@@ -1,9 +1,33 @@
-pandas
-python-binance
-PyYAML
-python-dotenv
-requests
-gradio>=4.3.0
-ccxt
-spaces
+pandas>=2.0.0
+requests>=2.31.0
+PyYAML>=6.0
+python-dotenv>=1.0.0
+numpy>=1.24.0
+scipy>=1.10.0
 
+# CoinGecko API (replaces Binance)
+pycoingecko>=3.1.0
+
+# Data & Processing
+gradio>=4.3.0
+ccxt>=4.0.0
+
+# ML & AI
+scikit-learn>=1.3.0
+tensorflow>=2.13.0
+torch>=2.0.0
+
+# Cryptography & Security
+cryptography>=41.0.0
+pycryptodome>=3.18.0
+
+# Async & Threading
+aiohttp>=3.8.0
+asyncio-contextmanager>=1.0.0
+
+# Utilities
+spaces>=0.1.0
+python-dateutil>=2.8.0
+
+# Logging & Monitoring
+python-json-logger>=2.0.0
