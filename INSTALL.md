@@ -5,7 +5,6 @@
 - Python 3.9 or higher
 - pip (Python package manager)
 - Git
-- Binance account (for API keys)
 
 ## Setup Instructions
 
@@ -43,10 +42,12 @@ Copy the example configuration:
 cp .env.example .env
 ```
 
-Edit `.env` and add your Binance API credentials:
+Edit `.env` - CoinGecko requires no API key for free tier:
 ```
-BINANCE_API_KEY=your_api_key_here
-BINANCE_API_SECRET=your_api_secret_here
+# Optional: Add CoinGecko Pro API key for higher rate limits
+COINGECKO_API_KEY=your_optional_pro_key
+
+# Trading Configuration
 TRADING_MODE=paper
 INITIAL_CAPITAL=10000
 ```
@@ -57,16 +58,21 @@ INITIAL_CAPITAL=10000
 python -c "import src; print('Installation successful!')"
 ```
 
-## Getting Binance API Keys
+## CoinGecko API Setup
 
-1. Log in to your Binance account at https://www.binance.com
-2. Navigate to **Account** > **API Management**
-3. Create a new API key with these permissions:
-   - ✅ Enable Reading
-   - ✅ Enable Spot & Margin Trading
-   - ❌ Do NOT enable withdrawal
-4. Copy API Key and Secret Key
-5. Add to `.env` file
+The crypto trading engine uses **CoinGecko API** for cryptocurrency data.
+
+### Free Tier (Recommended for most users)
+- No API key required
+- Rate limit: 10-50 requests/minute
+- Updates: ~30 seconds delayed
+- Perfect for swing trading and backtesting
+
+### Pro Tier (Optional)
+1. Sign up at https://www.coingecko.com/en/api
+2. Create Pro account for higher rate limits
+3. Get your API key from dashboard
+4. Add to `.env`: `COINGECKO_API_KEY=your_key_here`
 
 ## Docker Installation
 
@@ -93,7 +99,7 @@ docker-compose down
 docker build -t crypto-trading-engine .
 
 # Run container
-docker run -e BINANCE_API_KEY=xxx -e BINANCE_API_SECRET=yyy \
+docker run -e TRADING_MODE=paper \
   -v $(pwd)/logs:/app/logs \
   crypto-trading-engine
 ```
@@ -110,12 +116,12 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 pip install --upgrade -r requirements.txt
 ```
 
-### API Connection Issues
+### CoinGecko API Connection Issues
 
-1. Verify API keys are correct in `.env`
-2. Check Binance API status at https://www.binance.com/en/support
-3. Ensure your IP is whitelisted (if using IP restrictions)
-4. For testnet, use `TRADING_MODE=paper` initially
+1. Verify internet connection
+2. Check CoinGecko status at https://www.coingecko.com/
+3. For Pro tier, verify API key in `.env`
+4. Rate limits exceeded? Pro tier offers higher limits
 
 ### Permission Errors
 

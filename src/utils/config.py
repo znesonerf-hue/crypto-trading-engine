@@ -1,14 +1,14 @@
-"""Configuration management"""
+"""Trading Engine Configuration"""
 
 import os
 from pathlib import Path
-from typing import Any, Dict
-import yaml
+from typing import Dict, Any
 from dotenv import load_dotenv
+import yaml
 
 
 class Config:
-    """Configuration manager for trading engine"""
+    """Central configuration management"""
     
     def __init__(self, env_file: str = ".env"):
         """
@@ -21,8 +21,7 @@ class Config:
         load_dotenv(env_file)
         
         # API Configuration
-        self.binance_api_key = os.getenv("BINANCE_API_KEY", "")
-        self.binance_api_secret = os.getenv("BINANCE_API_SECRET", "")
+        self.coingecko_api_key = os.getenv("COINGECKO_API_KEY", "")  # Optional Pro key
         
         # Trading Configuration
         self.trading_mode = os.getenv("TRADING_MODE", "paper").lower()
@@ -34,7 +33,7 @@ class Config:
         
         # Strategy Configuration
         self.default_strategy = os.getenv("DEFAULT_STRATEGY", "momentum")
-        self.default_symbol = os.getenv("DEFAULT_SYMBOL", "BTCUSDT")
+        self.default_symbol = os.getenv("DEFAULT_SYMBOL", "bitcoin")  # CoinGecko ID
         self.default_timeframe = os.getenv("DEFAULT_TIMEFRAME", "1h")
         
         # Paper Trading
@@ -94,10 +93,6 @@ class Config:
         """
         if self.trading_mode not in ["paper", "backtest", "live"]:
             raise ValueError(f"Invalid trading mode: {self.trading_mode}")
-        
-        if self.trading_mode == "live":
-            if not self.binance_api_key or not self.binance_api_secret:
-                raise ValueError("Live trading requires API credentials")
         
         if self.initial_capital <= 0:
             raise ValueError("Initial capital must be positive")
