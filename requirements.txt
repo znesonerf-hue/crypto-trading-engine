@@ -4,3 +4,7 @@ PyYAML
 python-dotenv
 requests
 os
+gradio>=4.3.0
+ccxt
+
+
