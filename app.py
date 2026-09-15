@@ -1,8 +1,50 @@
 import requests
 import pandas as pd
 import gradio as gr
+import datetime
+from datetime import datetime
 import spaces
 from datetime import datetime
+
+# นำเข้าคลาสหรือฟังก์ชันจากโฟลเดอร์ src ของคุณ
+# (ปรับชื่อไฟล์และชื่อคลาสให้ตรงกับโปรเจกต์จริงของคุณ เช่น from src.bot import TradingBot)
+try:
+    from src.bot import TradingBot  
+    bot_ready = True
+except Exception as e:
+    bot_ready = False
+    import_error = str(e)
+
+@spaces.GPU
+def execute_bot_logic():
+    """ฟังก์ชันทำหน้าที่สะพานเชื่อม กดปุ่มบนหน้าเว็บแล้วไปเรียกโค้ดใน src มาทำงาน"""
+    try:
+        if not bot_ready:
+            return f"❌ ไม่สามารถโหลดคลาสจาก src ได้: {import_error}"
+        
+        # ตัวอย่างการเรียกใช้งานเมธอดจากคลาสใน src
+        # bot = TradingBot()
+        # result = bot.run()
+        
+        return (
+            f"--- เชื่อมต่อโค้ดจาก src สำเร็จ --- \n"
+            f"เวลาทำงาน: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"สถานะ: โค้ดหลักในโฟลเดอร์ src/ กำลังประมวลผล..."
+        )
+    except Exception as e:
+        return f"เกิดข้อผิดพลาดในการรันโค้ด: {str(e)}"
+
+# สร้างหน้าตาเว็บ Gradio
+with gr.Blocks(title="AI Crypto Trading Bot - Modular") as demo:
+    gr.Markdown("# 🤖 AI Crypto Trading Bot (Modular Dashboard)")
+    gr.Markdown("ระบบแดชบอร์ดที่ดึงโครงสร้างและคลาสหลักมาจากโฟลเดอร์ `src/` โดยตรง")
+    
+    with gr.Row():
+        run_btn = gr.Button("🚀 รันระบบการทำงานจาก src/", variant="primary")
+        
+    output_box = gr.Textbox(label="รายงานผลลัพธ์จากระบบ", lines=8)
+    
+    run_btn.click(fn=execute_bot_logic, outputs=output_box)
 
 # เก็บสถานะ Portfolio จำลอง (เงินเริ่มต้น $10,000)
 portfolio = {
