@@ -35,7 +35,7 @@ def analyze_market(crypto_id: str = 'bitcoin'):
         # Calculate Simple Moving Averages
         df = pd.DataFrame({'price': prices})
         df['SMA_10'] = df['price'].rolling(window=10).mean()
-        df['SMA_50'] = df['price'].rolling(window=min(50, len(prices))].mean()
+        df['SMA_50'] = df['price'].rolling(window=min(50, len(prices))).mean()
         
         current_price = prices[-1]
         sma10 = df['SMA_10'].iloc[-1]
