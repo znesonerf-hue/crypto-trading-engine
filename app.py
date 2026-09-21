@@ -6,34 +6,29 @@ import spaces
 
 
 @spaces.GPU
-def run_hybrid_trading_strategy(coin_id, vs_currency, short_window, long_window):
+def analyze_minute_trade(coin_id, vs_currency):
   try:
-    # ดึงข้อมูลราคาย้อนหลัง 30 วันจาก CoinGecko API
+    # ดึงข้อมูล 1 วันล่าสุด (ความละเอียดสูงสุดของ CoinGecko ฟรี คือประมาณทุกๆ 5 นาที)
     url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-    params = {"vs_currency": vs_currency, "days": "30"}
+    params = {"vs_currency": vs_currency, "days": "1"}
     response = requests.get(url, params=params)
     data = response.json()
 
     if "prices" not in data:
-      return (
-          None,
-          f"ไม่สามารถดึงข้อมูลได้ (อาจติด Rate Limit): {data.get('status', 'Unknown error')}",
-      )
+      return None, f"ไม่สามารถดึงข้อมูลได้: {data.get('status', 'Rate limit')}"
 
     prices = data["prices"]
     df = pd.DataFrame(prices, columns=["timestamp", "price"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
-    # คำนวณ Moving Average (Hybrid Logic)
-    df["SMA_Short"] = df["price"].rolling(window=int(short_window)).mean()
-    df["SMA_Long"] = df["price"].rolling(window=int(long_window)).mean()
+    # ใช้ Exponential Moving Average (EMA) แบบเร็ว สำหรับกรอบเวลานั้นๆ
+    df["EMA_Fast"] = df["price"].ewm(span=3, adjust=False).mean()
+    df["EMA_Slow"] = df["price"].ewm(span=8, adjust=False).mean()
 
-    # กำหนดสัญญาณซื้อ/ขาย (Signal Generation)
+    # คำนวณสัญญาณซื้อขายระยะสั้น
     df["Signal"] = 0
-    df.loc[df["SMA_Short"] > df["SMA_Long"], "Signal"] = 1  # สัญญาณซื้อ (Buy)
-    df.loc[df["SMA_Short"] <= df["SMA_Long"], "Signal"] = -1  # สัญญาณขาย (Sell)
-
-    # หาจุดเปลี่ยนสัญญาณเพื่อแสดง Marker บนกราฟ
+    df.loc[df["EMA_Fast"] > df["EMA_Slow"], "Signal"] = 1
+    df.loc[df["EMA_Fast"] <= df["EMA_Slow"], "Signal"] = -1
     df["Position"] = df["Signal"].diff()
 
     # สร้างกราฟ Plotly
@@ -43,105 +38,96 @@ def run_hybrid_trading_strategy(coin_id, vs_currency, short_window, long_window)
             x=df["timestamp"],
             y=df["price"],
             mode="lines",
-            name="Price",
+            name="Price (Intraday)",
             line=dict(color="cyan", width=1.5),
         )
     )
     fig.add_trace(
         go.Scatter(
             x=df["timestamp"],
-            y=df["SMA_Short"],
+            y=df["EMA_Fast"],
             mode="lines",
-            name=f"SMA {short_window}",
+            name="EMA 3 (Fast)",
             line=dict(color="orange", width=1),
         )
     )
     fig.add_trace(
         go.Scatter(
             x=df["timestamp"],
-            y=df["SMA_Long"],
+            y=df["EMA_Slow"],
             mode="lines",
-            name=f"SMA {long_window}",
+            name="EMA 8 (Slow)",
             line=dict(color="magenta", width=1),
         )
     )
 
-    # จุดซื้อ (Buy Signals)
+    # จุดซื้อระยะสั้น
     buy_signals = df[df["Position"] == 2]
     fig.add_trace(
         go.Scatter(
             x=buy_signals["timestamp"],
             y=buy_signals["price"],
             mode="markers",
-            name="Buy Signal",
-            marker=dict(color="green", size=10, symbol="triangle-up"),
+            name="Scalp Buy",
+            marker=dict(color="green", size=9, symbol="triangle-up"),
         )
     )
 
-    # จุดขาย (Sell Signals)
+    # จุดขายระยะสั้น
     sell_signals = df[df["Position"] == -2]
     fig.add_trace(
         go.Scatter(
             x=sell_signals["timestamp"],
             y=sell_signals["price"],
             mode="markers",
-            name="Sell Signal",
-            marker=dict(color="red", size=10, symbol="triangle-down"),
+            name="Scalp Sell",
+            marker=dict(color="red", size=9, symbol="triangle-down"),
         )
     )
 
     fig.update_layout(
-        title=f"Hybrid Strategy Backtest: {coin_id.upper()} ({vs_currency.upper()})",
-        xaxis_title="Time",
+        title=f"Intraday Scalping View: {coin_id.upper()} ({vs_currency.upper()})",
+        xaxis_title="Time (Last 24 Hours)",
         yaxis_title=f"Price ({vs_currency.upper()})",
         template="plotly_dark",
     )
 
-    latest_status = (
-        f"เหรียญ: {coin_id.upper()} | "
-        f"ราคาล่าสุด: {df['price'].iloc[-1]:,.2f} {vs_currency.upper()} | "
-        f"สถานะกลยุทธ์ปัจจุบัน: {'BUY (สัญญาณซื้อ/ถือเหรียญ)' if df['Signal'].iloc[-1] == 1 else 'SELL (สัญญาณขาย/ถือเงินสด)'}"
+    status = (
+        f"เหรียญ: {coin_id.upper()} | ราคาปัจจุบัน: {df['price'].iloc[-1]:,.2f}"
+        f" {vs_currency.upper()} | สัญญาณระยะสั้น: {'LONG / BUY' if df['Signal'].iloc[-1] == 1 else 'SHORT / SELL'}"
     )
-    return fig, latest_status
+    return fig, status
 
   except Exception as e:
     return None, f"เกิดข้อผิดพลาด: {e}"
 
 
-# สร้างหน้าตาเว็บแอปด้วย Gradio
+# สร้างหน้า UI ด้วย Gradio
 with gr.Blocks() as demo:
-  gr.Markdown("# 🤖 AI & Hybrid Trading Strategy Backtest Dashboard")
+  gr.Markdown("# ⚡ Intraday & Scalping Analysis Dashboard")
   gr.Markdown(
-      "ระบบจำลองกลยุทธ์การเทรดแบบผสมผสาน คำนวณสัญญาณอัตโนมัติบน Hugging Face"
-      " Spaces"
+      "จำลองการวิเคราะห์ข้อมูลความถี่สูงระยะสั้น (24 ชั่วโมงล่าสุด) ด้วย EMA"
+      " ระยะสั้น"
   )
 
   with gr.Row():
     coin_input = gr.Dropdown(
-        choices=["bitcoin", "ethereum", "solana", "ripple", "cardano"],
+        choices=["bitcoin", "ethereum", "solana", "ripple"],
         value="bitcoin",
-        label="เลือกเหรียญ (Coin ID)",
+        label="เลือกเหรียญ",
     )
     currency_input = gr.Dropdown(
-        choices=["usd", "thb"], value="usd", label="สกุลเงินเทียบ"
+        choices=["usd", "thb"], value="usd", label="สกุลเงิน"
     )
 
-  with gr.Row():
-    short_w = gr.Slider(
-        minimum=3, maximum=20, value=5, step=1, label="Short SMA Period"
-    )
-    long_w = gr.Slider(
-        minimum=10, maximum=50, value=20, step=1, label="Long SMA Period"
-    )
+  btn = gr.Button("วิเคราะห์กราฟระยะสั้น", variant="primary")
 
-  btn = gr.Button("รันกลยุทธ์และวิเคราะห์สัญญาณ", variant="primary")
-
-  status_output = gr.Textbox(label="สถานะและผลลัพธ์ล่าสุด")
-  plot_output = gr.Plot(label="กราฟแสดงสัญญาณซื้อ/ขาย (Backtest Chart)")
+  status_output = gr.Textbox(label="สถานะตลาดระยะสั้น")
+  plot_output = gr.Plot(label="กราฟสัญญาณเทรดระยะสั้น")
 
   btn.click(
-      fn=run_hybrid_trading_strategy,
-      inputs=[coin_input, currency_input, short_w, long_w],
+      fn=analyze_minute_trade,
+      inputs=[coin_input, currency_input],
       outputs=[plot_output, status_output],
   )
 
