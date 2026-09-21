@@ -1,56 +1,70 @@
 import ccxt
 import pandas as pd
 import plotly.graph_objects as go
-import streamlit as st
+import gradio as gr
 
-st.set_page_config(
-    page_title="AI Trading & Market Analysis Dashboard", layout="wide"
-)
+def get_market_data(symbol, timeframe):
+    try:
+        exchange = ccxt.binance()
+        ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=100)
+        df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        
+        # คำนวณ Moving Average 20
+        df['MA20'] = df['close'].rolling(window=20).mean()
+        
+        # สร้างกราฟ Candlestick ด้วย Plotly
+        fig = go.Figure()
+        fig.add_trace(go.Candlestick(
+            x=df['timestamp'],
+            open=df['open'], high=df['high'], low=df['low'], close=df['close'],
+            name='Price'
+        ))
+        fig.add_trace(go.Scatter(
+            x=df['timestamp'], y=df['MA20'], 
+            name='MA 20', line=dict(color='orange')
+        ))
+        
+        fig.update_layout(
+            title=f"{symbol} - Timeframe {timeframe}",
+            xaxis_title="Time",
+            yaxis_title="Price (USDT)",
+            template="plotly_dark"
+        )
+        
+        latest_price = f"ราคาล่าสุด ({symbol}): {df['close'].iloc[-1]:,.2f} USDT"
+        return fig, latest_price
+    except Exception as e:
+        return None, f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}"
 
-st.title("📈 AI & Crypto Trading Analysis Dashboard")
-st.sidebar.header("Configuration")
-
-# เลือกเหรียญและตลาด
-symbol = st.sidebar.selectbox(
-    "Trading Pair", ["BTC/USDT", "ETH/USDT", "SOL/USDT"], index=0
-)
-timeframe = st.sidebar.selectbox(
-    "Timeframe", ["1h", "4h", "1d"], index=0
-)
-
-@st.cache_data(ttl=300)
-def fetch_data(symbol, timeframe):
-    exchange = ccxt.binance()
-    ohlcv = exchange.fetch_ohlcv(symbol, timeframe, limit=100)
-    df = pd.DataFrame(
-        ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
+# สร้างหน้าตาเว็บแอปด้วย Gradio Blocks
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
+    gr.Markdown("# 📈 AI & Crypto Trading Analysis Dashboard")
+    gr.Markdown("เลือกคู่เหรียญและช่วงเวลาที่ต้องการวิเคราะห์ข้อมูลตลาดแบบเรียลไทม์")
+    
+    with gr.Row():
+        symbol_input = gr.Dropdown(
+            choices=["BTC/USDT", "ETH/USDT", "SOL/USDT"], 
+            value="BTC/USDT", 
+            label="Trading Pair"
+        )
+        timeframe_input = gr.Dropdown(
+            choices=["1h", "4h", "1d"], 
+            value="1h", 
+            label="Timeframe"
+        )
+    
+    btn = gr.Button("โหลดข้อมูล / วิเคราะห์กราฟ", variant="primary")
+    
+    price_output = gr.Textbox(label="สรุปราคาปัจจุบัน")
+    plot_output = gr.Plot(label="กราฟราคาทางเทคนิค")
+    
+    btn.click(
+        fn=get_market_data, 
+        inputs=[symbol_input, timeframe_input], 
+        outputs=[plot_output, price_output]
     )
-    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
-    return df
 
-try:
-    df = fetch_data(symbol, timeframe)
-    
-    # คำนวณ Moving Average เบื้องต้น (ตัวอย่าง AI/Indicator logic)
-    df['MA20'] = df['close'].rolling(window=20).mean()
-    df['MA50'] = df['close'].rolling(window=50).mean()
-    
-    # แสดงกราฟราคาด้วย Plotly
-    fig = go.Figure()
-    fig.add_trace(go.Candlestick(
-        x=df['timestamp'],
-        open=df['open'], high=df['high'], low=df['low'], close=df['close'],
-        name='Market Price'
-    ))
-    fig.add_trace(go.Scatter(x=df['timestamp'], y=df['MA20'], name='MA 20', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=df['timestamp'], y=df['MA50'], name='MA 50', line=dict(color='blue')))
-    
-    fig.update_layout(title=f"{symbol} Price Chart & AI Technical Indicators", xaxis_title="Time", yaxis_title="Price (USDT)")
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.subheader("📊 Market Summary")
-    st.metric(label="Latest Close Price", value=f"{df['close'].iloc[-1]:,.2f} USDT")
-
-except Exception as e:
-    st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูล: {e}")
+if __name__ == "__main__":
+    demo.launch()
     
