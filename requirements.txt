@@ -5,6 +5,7 @@ python-dotenv>=1.0.0
 numpy>=1.24.0
 scipy>=1.10.0
 plotly
+streamlit
 
 # CoinGecko API (free cryptocurrency data)
 pycoingecko>=3.1.0
