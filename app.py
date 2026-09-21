@@ -5,30 +5,38 @@ import requests
 import spaces
 
 
-# ใช้ @spaces.GPU ร่วมกับ ZeroGPU บน Hugging Face
 @spaces.GPU
-def get_coingecko_data(coin_id, vs_currency):
+def run_hybrid_trading_strategy(coin_id, vs_currency, short_window, long_window):
   try:
-    # ดึงข้อมูลราคาย้อนหลัง 1 วันจาก CoinGecko Public API
+    # ดึงข้อมูลราคาย้อนหลัง 30 วันจาก CoinGecko API
     url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
-    params = {"vs_currency": vs_currency, "days": "1"}
+    params = {"vs_currency": vs_currency, "days": "30"}
     response = requests.get(url, params=params)
     data = response.json()
 
     if "prices" not in data:
       return (
           None,
-          f"ไม่สามารถดึงข้อมูลได้ (อาจติด Rate Limit ของ CoinGecko): {data}",
+          f"ไม่สามารถดึงข้อมูลได้ (อาจติด Rate Limit): {data.get('status', 'Unknown error')}",
       )
 
-    prices = data["prices"]  # รูปแบบข้อมูล: [[timestamp, price], ...]
+    prices = data["prices"]
     df = pd.DataFrame(prices, columns=["timestamp", "price"])
     df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
-    # คำนวณ Moving Average เบื้องต้น
-    df["MA5"] = df["price"].rolling(window=5).mean()
+    # คำนวณ Moving Average (Hybrid Logic)
+    df["SMA_Short"] = df["price"].rolling(window=int(short_window)).mean()
+    df["SMA_Long"] = df["price"].rolling(window=int(long_window)).mean()
 
-    # สร้างกราฟเส้นด้วย Plotly
+    # กำหนดสัญญาณซื้อ/ขาย (Signal Generation)
+    df["Signal"] = 0
+    df.loc[df["SMA_Short"] > df["SMA_Long"], "Signal"] = 1  # สัญญาณซื้อ (Buy)
+    df.loc[df["SMA_Short"] <= df["SMA_Long"], "Signal"] = -1  # สัญญาณขาย (Sell)
+
+    # หาจุดเปลี่ยนสัญญาณเพื่อแสดง Marker บนกราฟ
+    df["Position"] = df["Signal"].diff()
+
+    # สร้างกราฟ Plotly
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
@@ -36,59 +44,105 @@ def get_coingecko_data(coin_id, vs_currency):
             y=df["price"],
             mode="lines",
             name="Price",
-            line=dict(color="cyan"),
+            line=dict(color="cyan", width=1.5),
         )
     )
     fig.add_trace(
         go.Scatter(
             x=df["timestamp"],
-            y=df["MA5"],
+            y=df["SMA_Short"],
             mode="lines",
-            name="MA 5",
-            line=dict(color="orange"),
+            name=f"SMA {short_window}",
+            line=dict(color="orange", width=1),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["timestamp"],
+            y=df["SMA_Long"],
+            mode="lines",
+            name=f"SMA {long_window}",
+            line=dict(color="magenta", width=1),
+        )
+    )
+
+    # จุดซื้อ (Buy Signals)
+    buy_signals = df[df["Position"] == 2]
+    fig.add_trace(
+        go.Scatter(
+            x=buy_signals["timestamp"],
+            y=buy_signals["price"],
+            mode="markers",
+            name="Buy Signal",
+            marker=dict(color="green", size=10, symbol="triangle-up"),
+        )
+    )
+
+    # จุดขาย (Sell Signals)
+    sell_signals = df[df["Position"] == -2]
+    fig.add_trace(
+        go.Scatter(
+            x=sell_signals["timestamp"],
+            y=sell_signals["price"],
+            mode="markers",
+            name="Sell Signal",
+            marker=dict(color="red", size=10, symbol="triangle-down"),
         )
     )
 
     fig.update_layout(
-        title=f"CoinGecko Market Data: {coin_id.upper()} ({vs_currency.upper()})",
+        title=f"Hybrid Strategy Backtest: {coin_id.upper()} ({vs_currency.upper()})",
         xaxis_title="Time",
         yaxis_title=f"Price ({vs_currency.upper()})",
         template="plotly_dark",
     )
 
-    latest_price = (
-        f"ราคาล่าสุด ({coin_id.upper()}): {df['price'].iloc[-1]:,.2f}"
-        f" {vs_currency.upper()}"
+    latest_status = (
+        f"เหรียญ: {coin_id.upper()} | "
+        f"ราคาล่าสุด: {df['price'].iloc[-1]:,.2f} {vs_currency.upper()} | "
+        f"สถานะกลยุทธ์ปัจจุบัน: {'BUY (สัญญาณซื้อ/ถือเหรียญ)' if df['Signal'].iloc[-1] == 1 else 'SELL (สัญญาณขาย/ถือเงินสด)'}"
     )
-    return fig, latest_price
+    return fig, latest_status
+
   except Exception as e:
     return None, f"เกิดข้อผิดพลาด: {e}"
 
 
 # สร้างหน้าตาเว็บแอปด้วย Gradio
 with gr.Blocks() as demo:
-  gr.Markdown("# 🦎 CoinGecko Crypto Dashboard with ZeroGPU")
-  gr.Markdown("ดึงข้อมูลและกราฟราคาคริปโตแบบเรียลไทม์จาก CoinGecko API")
+  gr.Markdown("# 🤖 AI & Hybrid Trading Strategy Backtest Dashboard")
+  gr.Markdown(
+      "ระบบจำลองกลยุทธ์การเทรดแบบผสมผสาน คำนวณสัญญาณอัตโนมัติบน Hugging Face"
+      " Spaces"
+  )
 
   with gr.Row():
     coin_input = gr.Dropdown(
-        choices=["bitcoin", "ethereum", "solana", "dogecoin", "ripple"],
+        choices=["bitcoin", "ethereum", "solana", "ripple", "cardano"],
         value="bitcoin",
         label="เลือกเหรียญ (Coin ID)",
     )
     currency_input = gr.Dropdown(
-        choices=["usd", "thb"], value="usd", label="สกุลเงินเทียบ (Currency)"
+        choices=["usd", "thb"], value="usd", label="สกุลเงินเทียบ"
     )
 
-  btn = gr.Button("โหลดข้อมูลจาก CoinGecko", variant="primary")
+  with gr.Row():
+    short_w = gr.Slider(
+        minimum=3, maximum=20, value=5, step=1, label="Short SMA Period"
+    )
+    long_w = gr.Slider(
+        minimum=10, maximum=50, value=20, step=1, label="Long SMA Period"
+    )
 
-  price_output = gr.Textbox(label="สรุปราคาปัจจุบัน")
-  plot_output = gr.Plot(label="กราฟราคาทางเทคนิค")
+  btn = gr.Button("รันกลยุทธ์และวิเคราะห์สัญญาณ", variant="primary")
+
+  status_output = gr.Textbox(label="สถานะและผลลัพธ์ล่าสุด")
+  plot_output = gr.Plot(label="กราฟแสดงสัญญาณซื้อ/ขาย (Backtest Chart)")
 
   btn.click(
-      fn=get_coingecko_data,
-      inputs=[coin_input, currency_input],
-      outputs=[plot_output, price_output],
+      fn=run_hybrid_trading_strategy,
+      inputs=[coin_input, currency_input, short_w, long_w],
+      outputs=[plot_output, status_output],
   )
 
 if __name__ == "__main__":
